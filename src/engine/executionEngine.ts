@@ -1,4 +1,5 @@
 import { nodeRegistry } from "../registry/nodeRegistry"
+import { resolveParams } from "./resolveParams"
 
 export async function runWorkflow(workflow: any) {
 
@@ -24,7 +25,17 @@ export async function runWorkflow(workflow: any) {
 
             const handler = nodeRegistry[node.type]
 
-            const output = await handler(node, results)
+            if (!handler) {
+        throw new Error(`Node type ${node.type} not found`)
+      }
+
+       // 🔥 resolve params using previous results
+      const resolvedParams = resolveParams(node.parameters, results)
+
+            const output = await handler({
+                ...node,
+                parameters: resolveParams
+            }, results)
 
             results[node.id] = output
 

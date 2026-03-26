@@ -1,3 +1,4 @@
+import { callLLM } from "./llm"
 import { calculator } from "../tools/calculator"
 import { weather } from "../tools/weather"
 
@@ -8,15 +9,39 @@ const tools: any = {
 
 export async function agentExecutor(query: string) {
 
-  // 🧠 Simple rule-based "AI" (we improve later with Gemini)
+  const prompt = `
+You are an AI agent.
 
-  if (query.includes("*") || query.includes("+")) {
-    return calculator.execute(query)
+Available tools:
+1. calculator → for math operations
+2. weather → for temperature queries
+
+Return ONLY JSON like this:
+{
+ "tool": "tool_name",
+ "input": "input_for_tool"
+}
+
+User query:
+${query}
+`
+
+  const response = await callLLM(prompt)
+
+  // 🔥 extract JSON
+  let parsed
+
+  try {
+    parsed = JSON.parse(response)
+  } catch {
+    return "Invalid AI response: " + response
   }
 
-  if (query.toLowerCase().includes("temperature")) {
-    return await weather.execute("Delhi")
+  const tool = tools[parsed.tool]
+
+  if (!tool) {
+    return "Tool not found"
   }
 
-  return "I don't understand"
+  return await tool.execute(parsed.input)
 }

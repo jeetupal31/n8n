@@ -24,6 +24,6 @@ app.post("/run-workflow", async (req, res) => {
 
 })
 
-app.listen(3000, ()=>{
- console.log("server running on port 3000")
+app.listen(5000, ()=>{
+ console.log("backend running on port 5000")
 })

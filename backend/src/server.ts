@@ -1,8 +1,10 @@
 import express from "express"
+import cors from "cors";
 import { runWorkflow } from "./engine/executionEngine"
 
 const app = express()
 
+app.use(cors());
 app.use(express.json())
 
 app.get("/", (req,res)=>{

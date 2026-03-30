@@ -24,6 +24,8 @@ export default function Home() {
 
   const [result, setResult] = useState("")
 
+  const [query, setQuery] = useState("")
+
   const onConnect = (params: any) =>
     setEdges((eds) => addEdge(params, eds))
 
@@ -35,7 +37,7 @@ export default function Home() {
           id: "1",
           type: "agent",
           parameters: {
-            query: "What is 45 * 20?"
+            query: query
           }
         }
       ],
@@ -64,6 +66,14 @@ export default function Home() {
 
   return (
     <div className="w-full h-screen">
+
+    <input
+  type="text"
+  placeholder="Enter your query..."
+  value={query}
+  onChange={(e) => setQuery(e.target.value)}
+  className="absolute top-4 left-40 z-10 border px-3 py-2 rounded w-64"
+/>
 
       <button
   onClick={runWorkflow}

@@ -21,11 +21,60 @@ export default function Home() {
 
   const [edges, setEdges] = useState([])
 
+
+  const [result, setResult] = useState("")
+
   const onConnect = (params: any) =>
     setEdges((eds) => addEdge(params, eds))
 
+  const runWorkflow = async () => {
+  try {
+    const workflow = {
+      nodes: [
+        {
+          id: "1",
+          type: "agent",
+          parameters: {
+            query: "What is 45 * 20?"
+          }
+        }
+      ],
+      edges: []
+    }
+
+    const res = await fetch("http://localhost:5000/run-workflow", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(workflow)
+    })
+
+    const data = await res.json()
+
+    console.log("Result:", data)
+
+    setResult(data["1"])
+
+  } catch (error) {
+    console.error(error)
+    alert("Error calling backend")
+  }
+}
+
   return (
     <div className="w-full h-screen">
+
+      <button
+  onClick={runWorkflow}
+  className="absolute top-4 left-4 z-10 bg-black text-white px-4 py-2 rounded"
+>
+  Run Workflow
+</button>
+<div className="absolute top-16 left-4 z-10 bg-white shadow-lg p-4 rounded w-64">
+  <h2 className="font-bold mb-2">Result</h2>
+  <p>{result || "No result yet"}</p>
+</div>
 
       <ReactFlow
         nodes={nodes}

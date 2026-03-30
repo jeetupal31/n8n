@@ -13,25 +13,28 @@ export async function agentExecutor(query: string) {
 
   for (let i = 0; i < 5; i++) {
 
-    const prompt = `
+ 
+  const prompt = `
 You are an AI agent.
 
+You MUST use tools for calculations.
+
 Available tools:
-1. calculator → for math operations
-2. weather → for temperature queries
+- calculator → for math
+- weather → for temperature
 
-If you need a tool, return:
-{
- "action": "tool",
- "tool": "tool_name",
- "input": "input"
-}
+Rules:
+- If question involves math → use calculator
+- If question involves weather → use weather
+- DO NOT guess answers
 
-If you have final answer, return:
-{
- "action": "final",
- "answer": "your answer"
-}
+Response format ONLY JSON:
+
+Tool call:
+{"action":"tool","tool":"calculator","input":"45*20"}
+
+Final answer:
+{"action":"final","answer":"900"}
 
 Context:
 ${context}
@@ -39,6 +42,7 @@ ${context}
 
     const response = await callLLM(prompt)
 
+    // 🔥 Clean response
     const cleaned = response.replace(/```json|```/g, "").trim()
 
     let parsed
@@ -46,15 +50,18 @@ ${context}
     try {
       parsed = JSON.parse(cleaned)
     } catch {
-      return "Invalid response: " + response
+      if (!response.includes("{")) {
+  // fallback if LLM behaves like chat
+  return response
+}
     }
 
-    // 🔥 If final answer
+    // ✅ Final answer
     if (parsed.action === "final") {
       return parsed.answer
     }
 
-    // 🔥 If tool call
+    // ✅ Tool call
     if (parsed.action === "tool") {
 
       const tool = tools[parsed.tool]
@@ -65,9 +72,9 @@ ${context}
 
       const result = await tool.execute(parsed.input)
 
-      // 🧠 Add result to context
+      // 🔥 Add tool result to context (VERY IMPORTANT)
       context += `
-Used tool: ${parsed.tool}
+Tool used: ${parsed.tool}
 Input: ${parsed.input}
 Result: ${result}
 `

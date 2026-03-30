@@ -1,11 +1,10 @@
 export const calculator = {
-  name: "calculator",
-
-  execute(input: string) {
+  execute: async (input: string) => {
     try {
-      return eval(input)
+      const result = eval(input)
+      return result.toString()
     } catch {
-      return "Invalid expression"
+      return "error"
     }
   }
 }

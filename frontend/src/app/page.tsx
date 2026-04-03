@@ -7,27 +7,52 @@ import ReactFlow, {
   Controls,
   MiniMap
 } from "reactflow"
+import CustomNode from "@/components/CustomNode"
 import "reactflow/dist/style.css"
+
+const nodeTypes = {
+  custom: CustomNode
+}
 
 export default function Home() {
 
   const [nodes, setNodes] = useState([
-    {
-      id: "1",
-      data: { label: "Agent Node" },
-      position: { x: 200, y: 100 }
-    }
-  ])
+  {
+    id: "1",
+    type: "custom", // 🔥 VERY IMPORTANT
+    data: {
+      label: "Agent Node",
+      type: "agent" // 🔥 used later
+    },
+    position: { x: 200, y: 100 }
+  }
+])
 
   const [edges, setEdges] = useState([])
-
-
   const [result, setResult] = useState("")
-
   const [query, setQuery] = useState("")
 
   const onConnect = (params: any) =>
     setEdges((eds) => addEdge(params, eds))
+
+  const addNode = (type: string) => {
+
+  const newNode = {
+    id: (nodes.length + 1).toString(),
+    type: "custom", // 🔥 must match nodeTypes
+    data: {
+      label: type.toUpperCase() + " Node",
+      type: type // 🔥 used for backend
+    },
+    position: {
+      x: Math.random() * 400,
+      y: Math.random() * 400
+    }
+  }
+
+  setNodes((prev) => [...prev, newNode])
+}
+
 
   const runWorkflow = async () => {
   try {
@@ -81,6 +106,32 @@ export default function Home() {
 >
   Run Workflow
 </button>
+
+<div className="absolute top-16 right-4 z-10 flex gap-2">
+
+  <button
+    onClick={() => addNode("agent")}
+    className="bg-blue-500 text-white px-3 py-1 rounded"
+  >
+    + Agent
+  </button>
+
+  <button
+    onClick={() => addNode("http")}
+    className="bg-green-500 text-white px-3 py-1 rounded"
+  >
+    + HTTP
+  </button>
+
+  <button
+    onClick={() => addNode("llm")}
+    className="bg-purple-500 text-white px-3 py-1 rounded"
+  >
+    + LLM
+  </button>
+
+</div>
+
 <div className="absolute top-16 left-4 z-10 bg-white shadow-lg p-4 rounded w-64">
   <h2 className="font-bold mb-2">Result</h2>
   <p>{result || "No result yet"}</p>
@@ -90,6 +141,7 @@ export default function Home() {
         nodes={nodes}
         edges={edges}
         onConnect={onConnect}
+        nodeTypes={nodeTypes}
       >
         <MiniMap />
         <Controls />

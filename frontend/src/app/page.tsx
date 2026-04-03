@@ -55,18 +55,21 @@ export default function Home() {
 
 
   const runWorkflow = async () => {
-  try {
+  
+    if (!query) {
+    alert("Please enter a query")
+    return
+  }
+
     const workflow = {
-      nodes: [
-        {
-          id: "1",
-          type: "agent",
-          parameters: {
-            query: query
-          }
-        }
-      ],
-      edges: []
+     nodes: nodes.map(n => ({
+  id: n.id,
+  type: n.data.type, // 🔥 dynamic type
+  parameters: {
+    query: query
+  }
+})),
+      edges: edges
     }
 
     const res = await fetch("http://localhost:5000/run-workflow", {
@@ -79,14 +82,7 @@ export default function Home() {
 
     const data = await res.json()
 
-    console.log("Result:", data)
-
     setResult(data["1"])
-
-  } catch (error) {
-    console.error(error)
-    alert("Error calling backend")
-  }
 }
 
   return (

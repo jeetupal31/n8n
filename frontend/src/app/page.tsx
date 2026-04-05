@@ -18,32 +18,20 @@ const nodeTypes = {
 
 export default function Home() {
 
-  const [nodes, setNodes] = useState([
-    {
-      id: "1",
-      type: "custom",
-      data: {
-        label: "Agent Node",
-        type: "agent",
-        query: ""
-      },
-      position: { x: 200, y: 100 }
-    }
-  ])
-
-  const [edges, setEdges] = useState([])
+  const [nodes, setNodes] = useState<any[]>([])
+  const [edges, setEdges] = useState<any[]>([])
   const [result, setResult] = useState("")
   const [query, setQuery] = useState("")
   const [selectedNode, setSelectedNode] = useState<any>(null)
 
-  // 🔥 LOAD WORKFLOW ON START
-  useEffect(() => {
-    const saved = localStorage.getItem("workflow")
+  const [workflows, setWorkflows] = useState<any[]>([])
+  const [workflowName, setWorkflowName] = useState("")
 
+  // 🔥 LOAD ALL WORKFLOWS
+  useEffect(() => {
+    const saved = localStorage.getItem("workflows")
     if (saved) {
-      const parsed = JSON.parse(saved)
-      setNodes(parsed.nodes || [])
-      setEdges(parsed.edges || [])
+      setWorkflows(JSON.parse(saved))
     }
   }, [])
 
@@ -97,17 +85,41 @@ export default function Home() {
     }))
   }
 
-  // 🔥 SAVE WORKFLOW
+  // 🔥 SAVE WORKFLOW (MULTIPLE)
   const saveWorkflow = () => {
 
-    const workflow = {
+    if (!workflowName) {
+      alert("Enter workflow name")
+      return
+    }
+
+    const newWorkflow = {
+      id: Date.now(),
+      name: workflowName,
       nodes,
       edges
     }
 
-    localStorage.setItem("workflow", JSON.stringify(workflow))
+    const updated = [...workflows, newWorkflow]
 
+    setWorkflows(updated)
+    localStorage.setItem("workflows", JSON.stringify(updated))
+
+    setWorkflowName("")
     alert("Workflow Saved ✅")
+  }
+
+  // 🔥 LOAD WORKFLOW
+  const loadWorkflow = (wf: any) => {
+    setNodes(wf.nodes || [])
+    setEdges(wf.edges || [])
+  }
+
+  // 🔥 DELETE WORKFLOW
+  const deleteWorkflow = (id: number) => {
+    const updated = workflows.filter(w => w.id !== id)
+    setWorkflows(updated)
+    localStorage.setItem("workflows", JSON.stringify(updated))
   }
 
   // 🔥 RUN WORKFLOW
@@ -138,7 +150,6 @@ export default function Home() {
     })
 
     const data = await res.json()
-
     setResult(data["1"])
   }
 
@@ -158,6 +169,14 @@ export default function Home() {
           Run
         </button>
 
+        <input
+          type="text"
+          placeholder="Workflow name..."
+          value={workflowName}
+          onChange={(e) => setWorkflowName(e.target.value)}
+          className="border px-3 py-2 rounded w-40"
+        />
+
         <button
           onClick={saveWorkflow}
           className="bg-blue-600 text-white px-4 py-2 rounded"
@@ -175,13 +194,39 @@ export default function Home() {
 
       </div>
 
-      {/* 🔥 Result Panel */}
+      {/* 🔥 WORKFLOW LIST */}
+      <div className="absolute top-16 left-44 z-10 bg-white p-3 shadow rounded w-72 max-h-48 overflow-y-auto">
+        <h3 className="font-bold mb-2">Workflows</h3>
+
+        {workflows.map((wf) => (
+          <div key={wf.id} className="flex justify-between items-center mb-2">
+
+            <button
+              onClick={() => loadWorkflow(wf)}
+              className="text-blue-600 underline"
+            >
+              {wf.name}
+            </button>
+
+            <button
+              onClick={() => deleteWorkflow(wf.id)}
+              className="text-red-500"
+            >
+              ✕
+            </button>
+
+          </div>
+        ))}
+
+      </div>
+
+      {/* 🔥 RESULT */}
       <div className="absolute bottom-4 left-44 z-10 bg-white shadow-lg p-4 rounded w-72">
         <h2 className="font-bold mb-2">Result</h2>
         <p className="text-lg font-mono">{result || "No result yet"}</p>
       </div>
 
-      {/* 🔥 Node Config Panel */}
+      {/* 🔥 NODE CONFIG */}
       {selectedNode && (
         <div className="absolute top-4 right-4 z-20 bg-white shadow-xl p-4 rounded w-80">
 
@@ -202,7 +247,7 @@ export default function Home() {
         </div>
       )}
 
-      {/* 🔥 Canvas */}
+      {/* 🔥 CANVAS */}
       <div className="ml-40 h-full">
         <ReactFlow
           nodes={nodes}

@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState } from "react"
+import React, { useState, useEffect } from "react"
 import ReactFlow, {
   addEdge,
   Background,
@@ -36,10 +36,21 @@ export default function Home() {
   const [query, setQuery] = useState("")
   const [selectedNode, setSelectedNode] = useState<any>(null)
 
+  // 🔥 LOAD WORKFLOW ON START
+  useEffect(() => {
+    const saved = localStorage.getItem("workflow")
+
+    if (saved) {
+      const parsed = JSON.parse(saved)
+      setNodes(parsed.nodes || [])
+      setEdges(parsed.edges || [])
+    }
+  }, [])
+
   const onConnect = (params: any) =>
     setEdges((eds) => addEdge(params, eds))
 
-  // 🔥 Add Node
+  // 🔥 ADD NODE
   const addNode = (type: string) => {
     const newNode = {
       id: (nodes.length + 1).toString(),
@@ -58,7 +69,7 @@ export default function Home() {
     setNodes((prev) => [...prev, newNode])
   }
 
-  // 🔥 Update Node Query
+  // 🔥 UPDATE NODE QUERY
   const updateNodeQuery = (value: string) => {
 
     if (!selectedNode) return
@@ -86,7 +97,20 @@ export default function Home() {
     }))
   }
 
-  // 🔥 Run Workflow
+  // 🔥 SAVE WORKFLOW
+  const saveWorkflow = () => {
+
+    const workflow = {
+      nodes,
+      edges
+    }
+
+    localStorage.setItem("workflow", JSON.stringify(workflow))
+
+    alert("Workflow Saved ✅")
+  }
+
+  // 🔥 RUN WORKFLOW
   const runWorkflow = async () => {
 
     if (!query && nodes.every(n => !n.data.query)) {
@@ -132,6 +156,13 @@ export default function Home() {
           className="bg-black text-white px-4 py-2 rounded"
         >
           Run
+        </button>
+
+        <button
+          onClick={saveWorkflow}
+          className="bg-blue-600 text-white px-4 py-2 rounded"
+        >
+          Save
         </button>
 
         <input

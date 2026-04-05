@@ -7,8 +7,10 @@ import ReactFlow, {
   Controls,
   MiniMap
 } from "reactflow"
-import CustomNode from "@/components/CustomNode"
 import "reactflow/dist/style.css"
+
+import CustomNode from "@/components/CustomNode"
+import Sidebar from "@/components/Sidebar"
 
 const nodeTypes = {
   custom: CustomNode
@@ -37,9 +39,8 @@ export default function Home() {
   const onConnect = (params: any) =>
     setEdges((eds) => addEdge(params, eds))
 
-  // 🔥 ADD NODE
+  // 🔥 Add Node
   const addNode = (type: string) => {
-
     const newNode = {
       id: (nodes.length + 1).toString(),
       type: "custom",
@@ -57,7 +58,7 @@ export default function Home() {
     setNodes((prev) => [...prev, newNode])
   }
 
-  // 🔥 UPDATE NODE QUERY
+  // 🔥 Update Node Query
   const updateNodeQuery = (value: string) => {
 
     if (!selectedNode) return
@@ -85,7 +86,7 @@ export default function Home() {
     }))
   }
 
-  // 🔥 RUN WORKFLOW
+  // 🔥 Run Workflow
   const runWorkflow = async () => {
 
     if (!query && nodes.every(n => !n.data.query)) {
@@ -120,63 +121,43 @@ export default function Home() {
   return (
     <div className="w-full h-screen">
 
-      {/* 🔥 GLOBAL INPUT */}
-      <input
-        type="text"
-        placeholder="Enter global query..."
-        value={query}
-        onChange={(e) => setQuery(e.target.value)}
-        className="absolute top-4 left-40 z-10 border px-3 py-2 rounded w-64"
-      />
+      {/* 🔥 Sidebar */}
+      <Sidebar addNode={addNode} />
 
-      {/* 🔥 RUN BUTTON */}
-      <button
-        onClick={runWorkflow}
-        className="absolute top-4 left-4 z-10 bg-black text-white px-4 py-2 rounded"
-      >
-        Run Workflow
-      </button>
-
-      {/* 🔥 NODE BUTTONS */}
-      <div className="absolute top-16 right-4 z-10 flex gap-2">
+      {/* 🔥 Top Controls */}
+      <div className="absolute top-4 left-44 z-10 flex gap-2">
 
         <button
-          onClick={() => addNode("agent")}
-          className="bg-blue-500 text-white px-3 py-1 rounded"
+          onClick={runWorkflow}
+          className="bg-black text-white px-4 py-2 rounded"
         >
-          + Agent
+          Run
         </button>
 
-        <button
-          onClick={() => addNode("http")}
-          className="bg-green-500 text-white px-3 py-1 rounded"
-        >
-          + HTTP
-        </button>
-
-        <button
-          onClick={() => addNode("llm")}
-          className="bg-purple-500 text-white px-3 py-1 rounded"
-        >
-          + LLM
-        </button>
+        <input
+          type="text"
+          placeholder="Global query..."
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          className="border px-3 py-2 rounded w-64"
+        />
 
       </div>
 
-      {/* 🔥 RESULT PANEL */}
-      <div className="absolute top-16 left-4 z-10 bg-white shadow-lg p-4 rounded w-64">
+      {/* 🔥 Result Panel */}
+      <div className="absolute bottom-4 left-44 z-10 bg-white shadow-lg p-4 rounded w-72">
         <h2 className="font-bold mb-2">Result</h2>
-        <p>{result || "No result yet"}</p>
+        <p className="text-lg font-mono">{result || "No result yet"}</p>
       </div>
 
-      {/* 🔥 NODE CONFIG PANEL */}
+      {/* 🔥 Node Config Panel */}
       {selectedNode && (
-        <div className="absolute top-4 right-4 z-20 bg-white shadow-lg p-4 rounded w-72">
+        <div className="absolute top-4 right-4 z-20 bg-white shadow-xl p-4 rounded w-80">
 
-          <h2 className="font-bold mb-2">Node Config</h2>
+          <h2 className="font-bold mb-3">⚙ Node Config</h2>
 
           <p className="text-sm mb-2">
-            Type: {selectedNode.data.type}
+            Type: <strong>{selectedNode.data.type}</strong>
           </p>
 
           <input
@@ -184,24 +165,26 @@ export default function Home() {
             placeholder="Enter node query"
             value={selectedNode.data.query || ""}
             onChange={(e) => updateNodeQuery(e.target.value)}
-            className="border w-full px-2 py-1 rounded"
+            className="border w-full px-3 py-2 rounded"
           />
 
         </div>
       )}
 
-      {/* 🔥 FLOW */}
-      <ReactFlow
-        nodes={nodes}
-        edges={edges}
-        onConnect={onConnect}
-        nodeTypes={nodeTypes}
-        onNodeClick={(event, node) => setSelectedNode(node)}
-      >
-        <MiniMap />
-        <Controls />
-        <Background />
-      </ReactFlow>
+      {/* 🔥 Canvas */}
+      <div className="ml-40 h-full">
+        <ReactFlow
+          nodes={nodes}
+          edges={edges}
+          onConnect={onConnect}
+          nodeTypes={nodeTypes}
+          onNodeClick={(event, node) => setSelectedNode(node)}
+        >
+          <MiniMap />
+          <Controls />
+          <Background />
+        </ReactFlow>
+      </div>
 
     </div>
   )

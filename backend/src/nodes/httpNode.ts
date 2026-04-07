@@ -2,7 +2,16 @@ import axios from "axios"
 
 export async function httpNode(node: any) {
 
-    const response = await axios.get(node.parameters.url)
+  const url = node.parameters.url
 
-    return response.data
+  if (!url) {
+    return "No URL provided"
+  }
+
+  try {
+    const res = await axios.get(url)
+    return res.data
+  } catch (error: any) {
+    return "HTTP Error: " + error.message
+  }
 }

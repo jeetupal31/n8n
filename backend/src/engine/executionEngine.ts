@@ -1,48 +1,25 @@
 import { nodeRegistry } from "../registry/nodeRegistry"
-import { resolveParams } from "./resolveParams"
 
 export async function runWorkflow(workflow: any) {
 
-    const results: any = {}
+  const results: any = {}
 
-    const { nodes, edges } = workflow
+  for (const node of workflow.nodes) {
 
-    const executed: Set<string> = new Set()
+    const executor = nodeRegistry[node.type]
 
-    while (executed.size < nodes.length) {
-
-        for (const node of nodes) {
-
-            if(executed.has(node.id)) continue
-
-            const dependencies = edges
-            .filter((e: any) => e.to === node.id)
-            .map((e: any) => e.from)
-
-            const ready = dependencies.every((dep: string) => executed.has(dep))
-
-            if(!ready) continue
-
-            const handler = nodeRegistry[node.type]
-
-            if (!handler) {
-        throw new Error(`Node type ${node.type} not found`)
-      }
-
-       // 🔥 resolve params using previous results
-      const resolvedParams = resolveParams(node.parameters, results)
-
-            const output = await handler({
-                ...node,
-                parameters: resolveParams
-            }, results)
-
-            results[node.id] = output
-
-            executed.add(node.id)
-        }
+    if (!executor) {
+      results[node.id] = "Unknown node type"
+      continue
     }
 
-    return results
-}
+    try {
+      const output = await executor(node)
+      results[node.id] = output
+    } catch (error: any) {
+      results[node.id] = "Error: " + error.message
+    }
+  }
 
+  return results
+}

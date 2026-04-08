@@ -27,7 +27,10 @@ export default function Home() {
   const [workflows, setWorkflows] = useState<any[]>([])
   const [workflowName, setWorkflowName] = useState("")
 
-  // 🔥 LOAD ALL WORKFLOWS
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState("")
+
+  // 🔥 LOAD WORKFLOWS
   useEffect(() => {
     const saved = localStorage.getItem("workflows")
     if (saved) {
@@ -85,7 +88,7 @@ export default function Home() {
     }))
   }
 
-  // 🔥 SAVE WORKFLOW (MULTIPLE)
+  // 🔥 SAVE WORKFLOW
   const saveWorkflow = () => {
 
     if (!workflowName) {
@@ -130,27 +133,43 @@ export default function Home() {
       return
     }
 
-    const workflow = {
-      nodes: nodes.map(n => ({
-        id: n.id,
-        type: n.data.type,
-        parameters: {
-          query: n.data.query || query
-        }
-      })),
-      edges: edges
+    setLoading(true)
+    setError("")
+    setResult("")
+
+    try {
+      const workflow = {
+        nodes: nodes.map(n => ({
+          id: n.id,
+          type: n.data.type,
+          parameters: {
+            query: n.data.query || query,
+            url: n.data.query || query
+          }
+        })),
+        edges: edges
+      }
+
+      const API_URL =
+        process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"
+
+      const res = await fetch(`${API_URL}/run-workflow`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(workflow)
+      })
+
+      const data = await res.json()
+
+      setResult(data["1"] || JSON.stringify(data, null, 2))
+
+    } catch (err: any) {
+      setError("Something went wrong ❌")
+    } finally {
+      setLoading(false)
     }
-
-    const res = await fetch("http://localhost:5000/run-workflow", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify(workflow)
-    })
-
-    const data = await res.json()
-    setResult(data["1"])
   }
 
   return (
@@ -220,10 +239,21 @@ export default function Home() {
 
       </div>
 
-      {/* 🔥 RESULT */}
-      <div className="absolute bottom-4 left-44 z-10 bg-white shadow-lg p-4 rounded w-72">
+      {/* 🔥 RESULT PANEL */}
+      <div className="absolute bottom-4 left-44 z-10 bg-white shadow-lg p-4 rounded w-80">
+
         <h2 className="font-bold mb-2">Result</h2>
-        <p className="text-lg font-mono">{result || "No result yet"}</p>
+
+        {loading && <p className="text-blue-500">Running...</p>}
+
+        {error && <p className="text-red-500">{error}</p>}
+
+        {!loading && !error && (
+          <pre className="text-sm whitespace-pre-wrap">
+            {result || "No result yet"}
+          </pre>
+        )}
+
       </div>
 
       {/* 🔥 NODE CONFIG */}

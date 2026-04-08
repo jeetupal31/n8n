@@ -1,6 +1,7 @@
 "use client"
 
 import React, { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
 import ReactFlow, {
   addEdge,
   Background,
@@ -18,6 +19,8 @@ const nodeTypes = {
 
 export default function Home() {
 
+  const router = useRouter()
+
   const [nodes, setNodes] = useState<any[]>([])
   const [edges, setEdges] = useState<any[]>([])
   const [result, setResult] = useState("")
@@ -30,13 +33,32 @@ export default function Home() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
 
-  // 🔥 LOAD WORKFLOWS
+  // 🔐 PROTECT ROUTE
   useEffect(() => {
-    const saved = localStorage.getItem("workflows")
-    if (saved) {
-      setWorkflows(JSON.parse(saved))
+    const token = localStorage.getItem("token")
+
+    if (!token) {
+      router.push("/login")
+      return
     }
+
+    // 🔥 Load workflows from backend
+    fetchWorkflows()
   }, [])
+
+  // 🔥 FETCH WORKFLOWS FROM DB
+  const fetchWorkflows = async () => {
+    const token = localStorage.getItem("token")
+
+    const res = await fetch("http://localhost:5000/workflows", {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    })
+
+    const data = await res.json()
+    setWorkflows(data)
+  }
 
   const onConnect = (params: any) =>
     setEdges((eds) => addEdge(params, eds))
@@ -88,28 +110,32 @@ export default function Home() {
     }))
   }
 
-  // 🔥 SAVE WORKFLOW
-  const saveWorkflow = () => {
+  // 🔥 SAVE WORKFLOW (DB)
+  const saveWorkflow = async () => {
 
     if (!workflowName) {
       alert("Enter workflow name")
       return
     }
 
-    const newWorkflow = {
-      id: Date.now(),
-      name: workflowName,
-      nodes,
-      edges
-    }
+    const token = localStorage.getItem("token")
 
-    const updated = [...workflows, newWorkflow]
-
-    setWorkflows(updated)
-    localStorage.setItem("workflows", JSON.stringify(updated))
+    await fetch("http://localhost:5000/workflows", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`
+      },
+      body: JSON.stringify({
+        name: workflowName,
+        nodes,
+        edges
+      })
+    })
 
     setWorkflowName("")
-    alert("Workflow Saved ✅")
+    fetchWorkflows()
+    alert("Saved ✅")
   }
 
   // 🔥 LOAD WORKFLOW
@@ -119,10 +145,17 @@ export default function Home() {
   }
 
   // 🔥 DELETE WORKFLOW
-  const deleteWorkflow = (id: number) => {
-    const updated = workflows.filter(w => w.id !== id)
-    setWorkflows(updated)
-    localStorage.setItem("workflows", JSON.stringify(updated))
+  const deleteWorkflow = async (id: string) => {
+    const token = localStorage.getItem("token")
+
+    await fetch(`http://localhost:5000/workflows/${id}`, {
+      method: "DELETE",
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    })
+
+    fetchWorkflows()
   }
 
   // 🔥 RUN WORKFLOW
@@ -138,6 +171,8 @@ export default function Home() {
     setResult("")
 
     try {
+      const token = localStorage.getItem("token")
+
       const workflow = {
         nodes: nodes.map(n => ({
           id: n.id,
@@ -150,13 +185,11 @@ export default function Home() {
         edges: edges
       }
 
-      const API_URL =
-        process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"
-
-      const res = await fetch(`${API_URL}/run-workflow`, {
+      const res = await fetch("http://localhost:5000/run-workflow", {
         method: "POST",
         headers: {
-          "Content-Type": "application/json"
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`
         },
         body: JSON.stringify(workflow)
       })
@@ -165,7 +198,7 @@ export default function Home() {
 
       setResult(data["1"] || JSON.stringify(data, null, 2))
 
-    } catch (err: any) {
+    } catch {
       setError("Something went wrong ❌")
     } finally {
       setLoading(false)
@@ -211,6 +244,17 @@ export default function Home() {
           className="border px-3 py-2 rounded w-64"
         />
 
+        {/* 🔥 LOGOUT */}
+        <button
+          onClick={() => {
+            localStorage.removeItem("token")
+            window.location.href = "/login"
+          }}
+          className="bg-red-500 text-white px-3 py-2 rounded"
+        >
+          Logout
+        </button>
+
       </div>
 
       {/* 🔥 WORKFLOW LIST */}
@@ -218,7 +262,7 @@ export default function Home() {
         <h3 className="font-bold mb-2">Workflows</h3>
 
         {workflows.map((wf) => (
-          <div key={wf.id} className="flex justify-between items-center mb-2">
+          <div key={wf._id} className="flex justify-between items-center mb-2">
 
             <button
               onClick={() => loadWorkflow(wf)}
@@ -228,7 +272,7 @@ export default function Home() {
             </button>
 
             <button
-              onClick={() => deleteWorkflow(wf.id)}
+              onClick={() => deleteWorkflow(wf._id)}
               className="text-red-500"
             >
               ✕
@@ -239,13 +283,12 @@ export default function Home() {
 
       </div>
 
-      {/* 🔥 RESULT PANEL */}
+      {/* 🔥 RESULT */}
       <div className="absolute bottom-4 left-44 z-10 bg-white shadow-lg p-4 rounded w-80">
 
         <h2 className="font-bold mb-2">Result</h2>
 
         {loading && <p className="text-blue-500">Running...</p>}
-
         {error && <p className="text-red-500">{error}</p>}
 
         {!loading && !error && (

@@ -1,27 +1,29 @@
 import express from "express"
 import cors from "cors"
+import dotenv from "dotenv"
+
+import { connectDB } from "./config/db"
+import authRoutes from "./routes/authRoutes"
+import workflowRoutes from "./routes/workflowRoutes"
 import { runWorkflow } from "./engine/executionEngine"
+
+dotenv.config()
+connectDB()
 
 const app = express()
 
 app.use(cors())
 app.use(express.json())
 
-app.get("/", (req, res) => {
-  res.send("Server running 🚀")
-})
+app.use("/auth", authRoutes)
+app.use("/workflows", workflowRoutes)
 
+// EXISTING
 app.post("/run-workflow", async (req, res) => {
-
-  try {
-    const result = await runWorkflow(req.body)
-    res.json(result)
-  } catch (error: any) {
-    res.status(500).json({ error: error.message })
-  }
-
+  const result = await runWorkflow(req.body)
+  res.json(result)
 })
 
 app.listen(5000, () => {
-  console.log("Backend running on port 5000")
+  console.log("Server running 🚀")
 })
